@@ -2978,7 +2978,7 @@ in
   openssh =
     callPackage ../tools/networking/openssh {
       hpnSupport = false;
-      withKerberos = false;
+      withKerberos = if stdenv.isDarwin then true else false;
       etcDir = "/etc/ssh";
       pam = if stdenv.isLinux then pam else null;
     };
