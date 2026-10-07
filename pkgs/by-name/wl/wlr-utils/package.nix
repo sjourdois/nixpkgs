@@ -4,6 +4,7 @@
   fetchFromGitHub,
   pkg-config,
   libGL,
+  fontconfig,
   ffmpeg,
   leptonica,
   libgbm,
@@ -42,9 +43,25 @@ rustPlatform.buildRustPackage (finalAttrs: {
     wayland
   ];
 
+  postInstall = ''
+    install -Dm644 -t $out/share/wlr-utils/themes docs/themes/*.toml
+    install -Dm644 -t $out/share/doc/wlr-utils docs/config.toml
+    install -Dm644 -t $out/lib/systemd/user \
+      crates/wlr-chooser/contrib/wlr-overlayd.service \
+      crates/wlr-draw/contrib/wlr-draw.service
+    substituteInPlace $out/lib/systemd/user/wlr-overlayd.service \
+      --replace-fail "/usr/bin/env wlr-overlayd" "$out/bin/wlr-overlayd"
+    substituteInPlace $out/lib/systemd/user/wlr-draw.service \
+      --replace-fail "/usr/bin/env wlr-draw" "$out/bin/wlr-draw"
+  '';
+
+  # libEGL and libfontconfig are dlopen'd at runtime.
   postFixup = ''
     for program in $out/bin/wlr-*; do
-      patchelf --add-needed "${libGL}/lib/libEGL.so.1" $program
+      patchelf \
+        --add-needed "${libGL}/lib/libEGL.so.1" \
+        --add-needed "${lib.getLib fontconfig}/lib/libfontconfig.so.1" \
+        $program
     done
   '';
 
